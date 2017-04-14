@@ -14,7 +14,7 @@ namespace MapsExchange
 
         private Color[] SelectColors;
         private Element CurInventRoot = null;
-        private InventoryItemIcon CurrentHoverItem;
+        private HoverItemIcon CurrentHoverItem;
 
         public override void Initialise()
         {
@@ -161,7 +161,7 @@ namespace MapsExchange
             if (!GameController.Game.IngameState.IngameUi.OpenLeftPanel.IsVisible)
                 return;
 
-            CurrentHoverItem = GameController.Game.IngameState.UIHover.AsObject<InventoryItemIcon>();
+            CurrentHoverItem = GameController.Game.IngameState.UIHover.AsObject<HoverItemIcon>();
 
             if (CurrentHoverItem.ToolTipType == ToolTipType.InventoryItem && CurrentHoverItem.Item != null)
             {
@@ -181,7 +181,7 @@ namespace MapsExchange
 
             foreach (var child in CurInventRoot.Children)
             {
-                var invItem = child.AsObject<InventoryItemIcon>();
+                var invItem = child.AsObject<NormalInventoryItem>();
                 var item = invItem.Item;
                 if (item == null) continue;
 
