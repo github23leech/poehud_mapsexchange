@@ -180,7 +180,6 @@ namespace MapsExchange
 
             if (CurrentStashAddr != visibleStash.Address)
             {
-                LogMessage("Update", 3);
                 CurrentStashAddr = visibleStash.Address;
                 UpdateData(items);
             }
