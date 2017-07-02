@@ -13,8 +13,6 @@ namespace MapsExchange
         private List<MapItem> MapItems = new List<MapItem>();
 
         private Color[] SelectColors;
-        private Element CurInventRoot = null;
-        private HoverItemIcon CurrentHoverItem;
 
         public override void Initialise()
         {
@@ -156,42 +154,59 @@ namespace MapsExchange
             };
         }
 
+        private long CurrentStashAddr;
+        private Dictionary<string, List<MapItem>> DrawMaps;
         public override void Render()
         {
-            if (!GameController.Game.IngameState.IngameUi.OpenLeftPanel.IsVisible)
+            var stash = GameController.Game.IngameState.ServerData.StashPanel;
+            if (!stash.IsVisible)
+            {
+                CurrentStashAddr = -1;
+                return;
+            }
+
+            var visibleStash = stash.VisibleStash;
+
+            if (visibleStash == null)
                 return;
 
-            CurrentHoverItem = GameController.Game.IngameState.UIHover.AsObject<HoverItemIcon>();
-
-            if (CurrentHoverItem.ToolTipType == ToolTipType.InventoryItem && CurrentHoverItem.Item != null)
+            var items = visibleStash.VisibleInventoryItems;
+            if (items == null)
             {
-                CurInventRoot = CurrentHoverItem.Parent;
+                CurrentStashAddr = -1;
+                return;
             }
-            
-            ScanForMaps();
-            //DebugColors();
+
+
+            if (CurrentStashAddr != visibleStash.Address)
+            {
+                LogMessage("Update", 3);
+                CurrentStashAddr = visibleStash.Address;
+                UpdateData(items);
+            }
+
+            HiglightMaps();
         }
 
-        public void ScanForMaps()
+        private void UpdateData(List<NormalInventoryItem> items)
         {
-            if (CurInventRoot == null)
-                return;
 
             MapItems = new List<MapItem>();
 
-            foreach (var child in CurInventRoot.Children)
+            foreach (var invItem in items)
             {
-                var invItem = child.AsObject<NormalInventoryItem>();
                 var item = invItem.Item;
                 if (item == null) continue;
 
                 BaseItemType bit = GameController.Files.BaseItemTypes.Translate(item.Path);
+                if (bit == null) continue;
+
                 if (bit.ClassName != "Map") continue;
 
                 float width = Settings.BordersWidth;
                 float spacing = Settings.Spacing;
 
-                var drawRect = child.GetClientRect();
+                var drawRect = invItem.GetClientRect();
                 drawRect.X += width / 2 + spacing;
                 drawRect.Y += width / 2 + spacing;
                 drawRect.Width -= width + spacing * 2;
@@ -199,39 +214,31 @@ namespace MapsExchange
 
                 MapItems.Add(new MapItem(bit.BaseName, drawRect));
             }
-            
 
-            if (Settings.AlwaysHighlight)
+
+            DrawMaps = (from demoClass in MapItems
+                            //where demoClass.Tier >= Settings.MinTier && demoClass.Tier <= Settings.MaxTier
+                            //TODO: Check tiers (or nobody need it?)
+                        group demoClass by demoClass.Name
+                                into groupedDemoClass
+                        select groupedDemoClass
+                             ).ToDictionary(gdc => gdc.Key, gdc => gdc.ToList());
+
+        }
+
+        private void HiglightMaps()
+        {
+            if (DrawMaps == null) return;
+            int colorCounter = 0;
+            foreach (var group in DrawMaps)
             {
-                var mapGroups = (from demoClass in MapItems
-                                 //where demoClass.Tier >= Settings.MinTier && demoClass.Tier <= Settings.MaxTier
-                                 //TODO: Check tiers (or nobody need it?)
-                             group demoClass by demoClass.Name
-                                    into groupedDemoClass
-                             select groupedDemoClass
-                                 ).ToDictionary(gdc => gdc.Key, gdc => gdc.ToList());
+                int count = group.Value.Count;
+                int take = count / 3;
+                take *= 3;
 
-                int colorCounter = 0;
-                foreach (var group in mapGroups)
-                {
-                    int count = group.Value.Count;
-                    int take = count / 3;
-                    take *= 3;
-
-                    var grabMaps = group.Value.Take(take);
-                    DrawGroup(grabMaps, SelectColors[colorCounter]);
-                    colorCounter++;
-                }
-            }
-            else
-            {
-                if (CurrentHoverItem.Item == null) return;
-
-                BaseItemType bit = GameController.Files.BaseItemTypes.Translate(CurrentHoverItem.Item.Path);
-                if (bit.ClassName != "Map") return;
-
-                var ident = MapItems.Where(x => x.Name == bit.BaseName);
-                DrawGroup(ident, Color.Green);
+                var grabMaps = group.Value.Take(take);
+                DrawGroup(grabMaps, SelectColors[colorCounter]);
+                colorCounter++;
             }
         }
 
@@ -243,19 +250,6 @@ namespace MapsExchange
             }
         }
 
-        private void DebugColors()//Colors test
-        {       
-            var drawRect = CurInventRoot.GetClientRect();
-            var drawPos = drawRect.TopLeft;
-            drawPos.Y -= 100;
-
-            for (int i = 0; i < SelectColors.Length; i++)
-            {
-                Graphics.DrawText("TestColor " + i, 15, drawPos, SelectColors[i]);
-                drawPos.Y += 16;
-            }
-        }
-
         public class MapItem
         {
             public MapItem(string Name, RectangleF DrawRect)
@@ -264,8 +258,6 @@ namespace MapsExchange
                 this.DrawRect = DrawRect;
             }
             public string Name;
-            public int Tier;
-
             public RectangleF DrawRect;
         }
     }
