@@ -5,6 +5,9 @@ using PoeHUD.Poe;
 using PoeHUD.Poe.Elements;
 using PoeHUD.Models;
 using SharpDX;
+using PoeHUD.Poe.Components;
+using System;
+using SharpDX.Direct3D9;
 
 namespace MapsExchange
 {
@@ -185,7 +188,31 @@ namespace MapsExchange
             }
 
             HiglightMaps();
+
+            if (!Settings.ShowPenalty.Value) return;
+            var hover = GameController.Game.IngameState.UIHover;
+            if (hover == null) return;
+
+            var invItem = hover.AsObject<NormalInventoryItem>();
+            var item = invItem.Item;
+            if (item == null) return;
+            if (string.IsNullOrEmpty(item.Path)) return;
+
+            var bit = GameController.Files.BaseItemTypes.Translate(item.Path);
+            if(bit != null && bit.ClassName == "Map")
+            {
+                Graphics.DrawText($"{LevelXpPenalty(bit.DropLevel):p0}", 15, invItem.GetClientRect().Center, FontDrawFlags.Center | FontDrawFlags.VerticalCenter);
+            }
         }
+        private double LevelXpPenalty(int arenaLevel)
+        {
+            int characterLevel = GameController.Player.GetComponent<Player>().Level;
+            double safeZone = Math.Floor(Convert.ToDouble(characterLevel) / 16) + 3;
+            double effectiveDifference = Math.Max(Math.Abs(characterLevel - arenaLevel) - safeZone, 0);
+            double xpMultiplier = Math.Max(Math.Pow((characterLevel + 5) / (characterLevel + 5 + Math.Pow(effectiveDifference, 2.5)), 1.5), 0.01);
+            return xpMultiplier;
+        }
+
 
         private void UpdateData(List<NormalInventoryItem> items)
         {
