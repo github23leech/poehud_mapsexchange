@@ -1,6 +1,8 @@
 ﻿using System;
 using PoeHUD.Plugins;
 using PoeHUD.Hud.Settings;
+using System.Collections.Generic;
+using System.Windows.Forms;
 
 namespace MapsExchange
 {
@@ -19,6 +21,6 @@ namespace MapsExchange
         [Menu("Spacing")]
         public RangeNode<float> Spacing { get; set; }
         [Menu("Show Penalty On Hover")]
-        public ToggleNode ShowPenalty { get; set; }
+        public ToggleNode ShowPenalty { get; set; }        
     }
 }

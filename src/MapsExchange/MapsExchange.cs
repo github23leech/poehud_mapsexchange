@@ -8,6 +8,8 @@ using SharpDX;
 using PoeHUD.Poe.Components;
 using System;
 using SharpDX.Direct3D9;
+using PoeHUD.Framework;
+using PoeHUD.Poe.RemoteMemoryObjects;
 
 namespace MapsExchange
 {
@@ -158,10 +160,15 @@ namespace MapsExchange
         }
 
         private long CurrentStashAddr;
-        private Dictionary<string, List<MapItem>> DrawMaps;
+
+        private Dictionary<string, int> CachedDropLvl = new Dictionary<string, int>();
+
         public override void Render()
         {
-            var stash = GameController.Game.IngameState.ServerData.StashPanel;
+            DrawPlayerInvMaps();
+
+            var ingameState = GameController.Game.IngameState;
+            var stash = ingameState.ServerData.StashPanel;
             if (!stash.IsVisible)
             {
                 CurrentStashAddr = -1;
@@ -181,43 +188,56 @@ namespace MapsExchange
             }
 
 
+            HiglightAllMaps(items);
+
             if (CurrentStashAddr != visibleStash.Address)
             {
                 CurrentStashAddr = visibleStash.Address;
                 UpdateData(items);
             }
 
-            HiglightMaps();
+            HiglightExchangeMaps();
 
-            if (!Settings.ShowPenalty.Value) return;
-            var hover = GameController.Game.IngameState.UIHover;
-            if (hover == null) return;
-
-            var invItem = hover.AsObject<NormalInventoryItem>();
-            var item = invItem.Item;
-            if (item == null) return;
-            if (string.IsNullOrEmpty(item.Path)) return;
-
-            var bit = GameController.Files.BaseItemTypes.Translate(item.Path);
-            if(bit != null && bit.ClassName == "Map")
+            /* doesn't work
+            if(ingameState.UIHover != null)
             {
-                Graphics.DrawText($"{LevelXpPenalty(bit.DropLevel):p0}", 15, invItem.GetClientRect().Center, FontDrawFlags.Center | FontDrawFlags.VerticalCenter);
+                var inventElement = ingameState.UIHover.AsObject<NormalInventoryItem>();
+                if(inventElement.Item != null)
+                LogMessage(inventElement.Item.Path, 0);
+                HiglightAllMaps(new List<NormalInventoryItem>() { inventElement });
+            }
+            */
+        }
+
+        private void DrawPlayerInvMaps()
+        {
+            var ingameState = GameController.Game.IngameState;
+
+            if (ingameState.IngameUi.InventoryPanel.IsVisible)
+            {
+                List<NormalInventoryItem> playerInvItems = new List<NormalInventoryItem>();
+                var inventoryZone = ingameState.IngameUi.InventoryPanel[PoeHUD.Models.Enums.InventoryIndex.PlayerInventory].InventoryUiElement;
+
+                foreach (Element element in inventoryZone.Children)
+                {
+                    var inventElement = element.AsObject<NormalInventoryItem>();
+
+                    if (inventElement.InventPosX < 0 || inventElement.InventPosY < 0)
+                    {
+                        continue;
+                    }
+                    playerInvItems.Add(inventElement);
+                }
+
+                HiglightAllMaps(playerInvItems);
             }
         }
-        private double LevelXpPenalty(int arenaLevel)
-        {
-            int characterLevel = GameController.Player.GetComponent<Player>().Level;
-            double safeZone = Math.Floor(Convert.ToDouble(characterLevel) / 16) + 3;
-            double effectiveDifference = Math.Max(Math.Abs(characterLevel - arenaLevel) - safeZone, 0);
-            double xpMultiplier = Math.Max(Math.Pow((characterLevel + 5) / (characterLevel + 5 + Math.Pow(effectiveDifference, 2.5)), 1.5), 0.01);
-            return xpMultiplier;
-        }
-
 
         private void UpdateData(List<NormalInventoryItem> items)
         {
-
             MapItems = new List<MapItem>();
+            var passed = GameController.Game.IngameState.ServerData.CompletedAreas;
+
 
             foreach (var invItem in items)
             {
@@ -238,11 +258,16 @@ namespace MapsExchange
                 drawRect.Width -= width + spacing * 2;
                 drawRect.Height -= width + spacing * 2;
 
-                MapItems.Add(new MapItem(bit.BaseName, drawRect));
+
+                var mapItem = new MapItem(bit.BaseName, drawRect);
+                var mapComponent = item.GetComponent<PoeHUD.Poe.Components.Map>();
+                mapItem.Completed = passed.Contains(mapComponent.Area);
+                mapItem.Penalty = LevelXpPenalty(bit.DropLevel);
+                MapItems.Add(mapItem);
             }
 
 
-            DrawMaps = (from demoClass in MapItems
+            var sortedMaps = (from demoClass in MapItems
                             //where demoClass.Tier >= Settings.MinTier && demoClass.Tier <= Settings.MaxTier
                             //TODO: Check tiers (or nobody need it?)
                         group demoClass by demoClass.Name
@@ -250,31 +275,81 @@ namespace MapsExchange
                         select groupedDemoClass
                              ).ToDictionary(gdc => gdc.Key, gdc => gdc.ToList());
 
-        }
 
-        private void HiglightMaps()
-        {
-            if (DrawMaps == null) return;
+
             int colorCounter = 0;
-            foreach (var group in DrawMaps)
+            foreach (var group in sortedMaps)
             {
                 int count = group.Value.Count;
                 int take = count / 3;
                 take *= 3;
 
                 var grabMaps = group.Value.Take(take);
-                DrawGroup(grabMaps, SelectColors[colorCounter]);
+
+                foreach (var dropMap in grabMaps)
+                {
+                    dropMap.DrawColor = SelectColors[colorCounter];
+                }
+
                 colorCounter++;
             }
         }
 
-        private void DrawGroup(IEnumerable<MapItem> grabMaps, Color color)
+        private void HiglightExchangeMaps()
         {
-            foreach (var dropMap in grabMaps)
+            foreach (var drapMap in MapItems)
             {
-                Graphics.DrawFrame(dropMap.DrawRect, Settings.BordersWidth, color);
+                Graphics.DrawFrame(drapMap.DrawRect, Settings.BordersWidth, drapMap.DrawColor);
+
+                if (drapMap.Completed)
+                {
+                    var color = Color.Red;
+                    color.A = 200;
+                    Graphics.DrawLine(drapMap.DrawRect.TopLeft, drapMap.DrawRect.BottomRight, 1, color);
+                    Graphics.DrawLine(drapMap.DrawRect.TopRight, drapMap.DrawRect.BottomLeft, 1, color);
+                }
             }
         }
+
+
+
+        private void HiglightAllMaps(List<NormalInventoryItem> items)
+        {
+            foreach (var item in items)
+            {
+                var entity = item.Item;
+                if (item == null) continue;
+
+                BaseItemType bit = GameController.Files.BaseItemTypes.Translate(entity.Path);
+                if (bit == null) continue;
+                if (bit.ClassName != "Map") continue;
+
+                var drawRect = item.GetClientRect();
+                Graphics.DrawFrame(drawRect, 1, Color.Gray);
+                var textColor = Color.White;
+          
+
+                if (Settings.ShowPenalty.Value)
+                {
+                    var penalty = LevelXpPenalty(bit.DropLevel);
+                    textColor.A = (byte)(255f * (1 - penalty));
+                    Graphics.DrawText($"{penalty:p0}", 20, drawRect.BottomLeft, textColor, FontDrawFlags.Left | FontDrawFlags.Bottom);
+                }
+            }
+        }
+
+
+
+
+        private double LevelXpPenalty(int arenaLevel)
+        {
+            int characterLevel = GameController.Player.GetComponent<Player>().Level;
+            double safeZone = Math.Floor(Convert.ToDouble(characterLevel) / 16) + 3;
+            double effectiveDifference = Math.Max(Math.Abs(characterLevel - arenaLevel) - safeZone, 0);
+            double xpMultiplier = Math.Max(Math.Pow((characterLevel + 5) / (characterLevel + 5 + Math.Pow(effectiveDifference, 2.5)), 1.5), 0.01);
+            return xpMultiplier;
+        }
+
 
         public class MapItem
         {
@@ -284,7 +359,10 @@ namespace MapsExchange
                 this.DrawRect = DrawRect;
             }
             public string Name;
+            public double Penalty;
             public RectangleF DrawRect;
+            public Color DrawColor = Color.Transparent;
+            public bool Completed;
         }
     }
 }
