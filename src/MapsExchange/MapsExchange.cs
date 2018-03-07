@@ -332,7 +332,7 @@ namespace MapsExchange
                 if (Settings.ShowPenalty.Value)
                 {
                     var penalty = LevelXpPenalty(bit.DropLevel);
-                    textColor.A = (byte)(255f * (1 - penalty));
+                    textColor.A = (byte)(255f * penalty);
                     Graphics.DrawText($"{penalty:p0}", 20, drawRect.BottomLeft, textColor, FontDrawFlags.Left | FontDrawFlags.Bottom);
                 }
             }
