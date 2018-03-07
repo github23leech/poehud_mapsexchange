@@ -187,6 +187,7 @@ namespace MapsExchange
                 return;
             }
 
+            HiglightExchangeMaps();
 
             HiglightAllMaps(items);
 
@@ -196,7 +197,7 @@ namespace MapsExchange
                 UpdateData(items);
             }
 
-            HiglightExchangeMaps();
+          
 
             /* doesn't work
             if(ingameState.UIHover != null)
@@ -334,16 +335,27 @@ namespace MapsExchange
 
                 var drawRect = item.GetClientRect();
                 //Graphics.DrawFrame(drawRect, 1, Color.Gray);
-            
-                
+
+                var offset = 3;
+                drawRect.Top += offset;
+                drawRect.Bottom -= offset;
+                drawRect.Right -= offset;
+                drawRect.Left += offset;
+
 
                 if (Settings.ShowPenalty.Value)
                 {
                     var penalty = LevelXpPenalty(bit.DropLevel);
                     var textColor = Color.Lerp(Color.Red, Color.Green, (float)penalty);
-                 
-                    textColor.A = (byte)(255f * (1 - penalty) * 1.5f);
-                    Graphics.DrawText($"{penalty:p0}", 20, drawRect.BottomLeft, textColor, FontDrawFlags.Left | FontDrawFlags.Bottom);
+
+                    //textColor.A = (byte)(255f * penalty * 100);
+                    var labelText = $"{penalty:p0}";
+                    var textSize = Graphics.MeasureText(labelText, 20, FontDrawFlags.Center | FontDrawFlags.Bottom);
+
+                    Graphics.DrawBox(new RectangleF(drawRect.X + drawRect.Width / 2 - textSize.Width / 2, drawRect.Y + drawRect.Height - textSize.Height, textSize.Width, textSize.Height), Color.Black);
+
+                    Graphics.DrawText(labelText, 20, new Vector2(drawRect.Center.X, drawRect.Bottom), 
+                        textColor, FontDrawFlags.Center | FontDrawFlags.Bottom);
                 }
             }
         }
@@ -353,7 +365,7 @@ namespace MapsExchange
 
         private double LevelXpPenalty(int arenaLevel)
         {
-            int characterLevel = GameController.Player.GetComponent<Player>().Level;
+            int characterLevel = GameController.Player.GetComponent<Player>().Level + 2;
             double safeZone = Math.Floor(Convert.ToDouble(characterLevel) / 16) + 3;
             double effectiveDifference = Math.Max(Math.Abs(characterLevel - arenaLevel) - safeZone, 0);
             double xpMultiplier = Math.Max(Math.Pow((characterLevel + 5) / (characterLevel + 5 + Math.Pow(effectiveDifference, 2.5)), 1.5), 0.01);
