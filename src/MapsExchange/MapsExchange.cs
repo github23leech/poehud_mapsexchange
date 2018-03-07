@@ -297,16 +297,24 @@ namespace MapsExchange
 
         private void HiglightExchangeMaps()
         {
+            var color = Color.Green;
+            color.A = 255;
+
             foreach (var drapMap in MapItems)
             {
                 Graphics.DrawFrame(drapMap.DrawRect, Settings.BordersWidth, drapMap.DrawColor);
 
-                if (drapMap.Completed)
+                if (!drapMap.Completed)
                 {
-                    var color = Color.Red;
-                    color.A = 200;
+                  
+                    Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/circle.png"), drapMap.DrawRect, color);
+
+                    /*
+
+                    
                     Graphics.DrawLine(drapMap.DrawRect.TopLeft, drapMap.DrawRect.BottomRight, 1, color);
                     Graphics.DrawLine(drapMap.DrawRect.TopRight, drapMap.DrawRect.BottomLeft, 1, color);
+                    */
                 }
             }
         }
@@ -325,16 +333,16 @@ namespace MapsExchange
                 if (bit.ClassName != "Map") continue;
 
                 var drawRect = item.GetClientRect();
-                Graphics.DrawFrame(drawRect, 1, Color.Gray);
+                //Graphics.DrawFrame(drawRect, 1, Color.Gray);
             
-          
+                
 
                 if (Settings.ShowPenalty.Value)
                 {
                     var penalty = LevelXpPenalty(bit.DropLevel);
                     var textColor = Color.Lerp(Color.Red, Color.Green, (float)penalty);
                  
-                    textColor.A = (byte)(255f * penalty * 1.5f);
+                    textColor.A = (byte)(255f * (1 - penalty) * 1.5f);
                     Graphics.DrawText($"{penalty:p0}", 20, drawRect.BottomLeft, textColor, FontDrawFlags.Left | FontDrawFlags.Bottom);
                 }
             }
