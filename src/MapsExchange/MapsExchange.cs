@@ -236,7 +236,7 @@ namespace MapsExchange
         private void UpdateData(List<NormalInventoryItem> items)
         {
             MapItems = new List<MapItem>();
-            var passed = GameController.Game.IngameState.ServerData.CompletedAreas;
+            var passed = GameController.Game.IngameState.ServerData.BonusCompletedAreas;
 
 
             foreach (var invItem in items)
@@ -326,13 +326,15 @@ namespace MapsExchange
 
                 var drawRect = item.GetClientRect();
                 Graphics.DrawFrame(drawRect, 1, Color.Gray);
-                var textColor = Color.White;
+            
           
 
                 if (Settings.ShowPenalty.Value)
                 {
                     var penalty = LevelXpPenalty(bit.DropLevel);
-                    textColor.A = (byte)(255f * penalty);
+                    var textColor = Color.Lerp(Color.Red, Color.Green, (float)penalty);
+                 
+                    textColor.A = (byte)(255f * penalty * 1.5f);
                     Graphics.DrawText($"{penalty:p0}", 20, drawRect.BottomLeft, textColor, FontDrawFlags.Left | FontDrawFlags.Bottom);
                 }
             }
