@@ -3,6 +3,7 @@ using PoeHUD.Plugins;
 using PoeHUD.Hud.Settings;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using SharpDX;
 
 namespace MapsExchange
 {
@@ -13,6 +14,7 @@ namespace MapsExchange
             Enable = false;
             BordersWidth = new RangeNode<float>(3, 1, 10);
             Spacing = new RangeNode<float>(1, 0, 10);
+            UnCompletedMapsColor = new ColorNode(Color.Green);
             ShowPenalty = true;
         }
 
@@ -21,6 +23,9 @@ namespace MapsExchange
         [Menu("Spacing")]
         public RangeNode<float> Spacing { get; set; }
         [Menu("Show Penalty On Hover")]
-        public ToggleNode ShowPenalty { get; set; }        
+        public ToggleNode ShowPenalty { get; set; }
+
+        [Menu("Not completed Maps Color")]
+        public ColorNode UnCompletedMapsColor { get; set; }
     }
 }

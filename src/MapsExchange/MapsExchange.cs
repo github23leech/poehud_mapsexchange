@@ -298,8 +298,7 @@ namespace MapsExchange
 
         private void HiglightExchangeMaps()
         {
-            var color = Color.Green;
-            color.A = 255;
+            var color = Settings.UnCompletedMapsColor;
 
             foreach (var drapMap in MapItems)
             {
@@ -345,7 +344,7 @@ namespace MapsExchange
 
                 if (Settings.ShowPenalty.Value)
                 {
-                    var penalty = LevelXpPenalty(bit.DropLevel);
+                    var penalty =  LevelXpPenalty(bit.DropLevel);
                     var textColor = Color.Lerp(Color.Red, Color.Green, (float)penalty);
 
                     //textColor.A = (byte)(255f * penalty * 100);
@@ -360,18 +359,34 @@ namespace MapsExchange
             }
         }
 
-
-
-
         private double LevelXpPenalty(int arenaLevel)
         {
             int characterLevel = GameController.Player.GetComponent<Player>().Level;
+
+            float effectiveArenaLevel = arenaLevel < 71 ? arenaLevel : ArenaEffectiveLevels[arenaLevel];
             double safeZone = Math.Floor(Convert.ToDouble(characterLevel) / 16) + 3;
-            double effectiveDifference = Math.Max(Math.Abs(characterLevel - arenaLevel) - safeZone, 0);
+            double effectiveDifference = Math.Max(Math.Abs(characterLevel - effectiveArenaLevel) - safeZone, 0);
             double xpMultiplier = Math.Max(Math.Pow((characterLevel + 5) / (characterLevel + 5 + Math.Pow(effectiveDifference, 2.5)), 1.5), 0.01);
             return xpMultiplier;
         }
 
+        Dictionary<int, float> ArenaEffectiveLevels = new Dictionary<int, float>()
+        {
+            {71, 70.94f},
+            {72, 71.82f},
+            {73, 72.64f},
+            {74, 73.4f},
+            {75, 74.1f},
+            {76, 74.74f},
+            {77, 75.32f},
+            {78, 75.84f},
+            {79, 76.3f},
+            {80, 76.7f},
+            {81, 77.04f},
+            {82, 77.32f},
+            {83, 77.54f},
+            {84, 77.7f}
+        };
 
         public class MapItem
         {
