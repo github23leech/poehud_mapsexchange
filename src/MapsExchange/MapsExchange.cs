@@ -263,7 +263,7 @@ namespace MapsExchange
                 var mapItem = new MapItem(bit.BaseName, drawRect);
                 var mapComponent = item.GetComponent<PoeHUD.Poe.Components.Map>();
                 mapItem.Completed = passed.Contains(mapComponent.Area);
-                mapItem.Penalty = LevelXpPenalty(bit.DropLevel);
+                mapItem.Penalty = LevelXpPenalty(mapComponent.Area.AreaLevel);
                 MapItems.Add(mapItem);
             }
 
@@ -298,7 +298,7 @@ namespace MapsExchange
 
         private void HiglightExchangeMaps()
         {
-            var color = Settings.UnCompletedMapsColor;
+            var color = Settings.UncompletedMapsColor;
 
             foreach (var drapMap in MapItems)
             {
@@ -307,7 +307,7 @@ namespace MapsExchange
                 if (!drapMap.Completed)
                 {
                   
-                    Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/circle.png"), drapMap.DrawRect, color);
+                    Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/circle2.png"), drapMap.DrawRect, color);
 
                     /*
 
@@ -331,9 +331,9 @@ namespace MapsExchange
                 BaseItemType bit = GameController.Files.BaseItemTypes.Translate(entity.Path);
                 if (bit == null) continue;
                 if (bit.ClassName != "Map") continue;
+                var mapComponent = entity.GetComponent<PoeHUD.Poe.Components.Map>();
 
                 var drawRect = item.GetClientRect();
-                //Graphics.DrawFrame(drawRect, 1, Color.Gray);
 
                 var offset = 3;
                 drawRect.Top += offset;
@@ -344,10 +344,8 @@ namespace MapsExchange
 
                 if (Settings.ShowPenalty.Value)
                 {
-                    var penalty =  LevelXpPenalty(bit.DropLevel);
+                    var penalty =  LevelXpPenalty(mapComponent.Area.AreaLevel);
                     var textColor = Color.Lerp(Color.Red, Color.Green, (float)penalty);
-
-                    //textColor.A = (byte)(255f * penalty * 100);
                     var labelText = $"{penalty:p0}";
                     var textSize = Graphics.MeasureText(labelText, 20, FontDrawFlags.Center | FontDrawFlags.Bottom);
 

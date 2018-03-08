@@ -14,7 +14,7 @@ namespace MapsExchange
             Enable = false;
             BordersWidth = new RangeNode<float>(3, 1, 10);
             Spacing = new RangeNode<float>(1, 0, 10);
-            UnCompletedMapsColor = new ColorNode(Color.Green);
+            UncompletedMapsColor = new ColorNode(Color.Red);
             ShowPenalty = true;
         }
 
@@ -26,6 +26,6 @@ namespace MapsExchange
         public ToggleNode ShowPenalty { get; set; }
 
         [Menu("Not completed Maps Color")]
-        public ColorNode UnCompletedMapsColor { get; set; }
+        public ColorNode UncompletedMapsColor { get; set; }
     }
 }
