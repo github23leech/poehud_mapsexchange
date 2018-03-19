@@ -14,7 +14,6 @@ namespace MapsExchange
             Enable = false;
             BordersWidth = new RangeNode<float>(3, 1, 10);
             Spacing = new RangeNode<float>(1, 0, 10);
-            UncompletedMapsColor = new ColorNode(Color.Red);
             ShowPenalty = true;
         }
 
@@ -24,8 +23,5 @@ namespace MapsExchange
         public RangeNode<float> Spacing { get; set; }
         [Menu("Show Penalty On Hover")]
         public ToggleNode ShowPenalty { get; set; }
-
-        [Menu("Not completed Maps Color")]
-        public ColorNode UncompletedMapsColor { get; set; }
     }
 }

@@ -237,7 +237,9 @@ namespace MapsExchange
         private void UpdateData(List<NormalInventoryItem> items)
         {
             MapItems = new List<MapItem>();
-            var passed = GameController.Game.IngameState.ServerData.BonusCompletedAreas;
+            var bonusComp = GameController.Game.IngameState.ServerData.BonusCompletedAreas;
+            var comp = GameController.Game.IngameState.ServerData.CompletedAreas;
+            var shEld = GameController.Game.IngameState.ServerData.ShaperElderAreas;
 
 
             foreach (var invItem in items)
@@ -262,7 +264,14 @@ namespace MapsExchange
 
                 var mapItem = new MapItem(bit.BaseName, drawRect);
                 var mapComponent = item.GetComponent<PoeHUD.Poe.Components.Map>();
-                mapItem.Completed = passed.Contains(mapComponent.Area);
+
+                if (comp.Contains(mapComponent.Area))
+                    mapItem.Completed++;
+                if (bonusComp.Contains(mapComponent.Area))
+                    mapItem.Completed++;
+
+                mapItem.ShaperElder = shEld.Contains(mapComponent.Area);
+
                 mapItem.Penalty = LevelXpPenalty(mapComponent.Area.AreaLevel);
                 MapItems.Add(mapItem);
             }
@@ -298,23 +307,24 @@ namespace MapsExchange
 
         private void HiglightExchangeMaps()
         {
-            var color = Settings.UncompletedMapsColor;
-
             foreach (var drapMap in MapItems)
             {
                 Graphics.DrawFrame(drapMap.DrawRect, Settings.BordersWidth, drapMap.DrawColor);
 
-                if (!drapMap.Completed)
+                if(drapMap.Completed == 0)
+                    Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/circle2.png"), drapMap.DrawRect, Color.Red);
+                else if (drapMap.Completed == 1)
+                    Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/circle2.png"), drapMap.DrawRect, Color.Yellow);
+
+
+                if (drapMap.ShaperElder)
                 {
-                  
-                    Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/circle2.png"), drapMap.DrawRect, color);
+                    var bgRect = drapMap.DrawRect;
+                    bgRect.Left = bgRect.Right - 25;
+                    bgRect.Bottom = bgRect.Top + 17;
 
-                    /*
-
-                    
-                    Graphics.DrawLine(drapMap.DrawRect.TopLeft, drapMap.DrawRect.BottomRight, 1, color);
-                    Graphics.DrawLine(drapMap.DrawRect.TopRight, drapMap.DrawRect.BottomLeft, 1, color);
-                    */
+                    Graphics.DrawBox(bgRect, Color.Black);
+                    Graphics.DrawText("S/E", 15, drapMap.DrawRect.TopRight, Color.Yellow, FontDrawFlags.Top | FontDrawFlags.Right);
                 }
             }
         }
@@ -346,6 +356,8 @@ namespace MapsExchange
                 {
                     var penalty =  LevelXpPenalty(mapComponent.Area.AreaLevel);
                     var textColor = Color.Lerp(Color.Red, Color.Green, (float)penalty);
+                    //textColor.A = (byte)(255f * (1f - (float)penalty) * 20f);
+
                     var labelText = $"{penalty:p0}";
                     var textSize = Graphics.MeasureText(labelText, 20, FontDrawFlags.Center | FontDrawFlags.Bottom);
 
@@ -397,7 +409,8 @@ namespace MapsExchange
             public double Penalty;
             public RectangleF DrawRect;
             public Color DrawColor = Color.Transparent;
-            public bool Completed;
+            public int Completed;
+            public bool ShaperElder;
         }
     }
 }
