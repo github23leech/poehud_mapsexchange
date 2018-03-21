@@ -10,6 +10,7 @@ using System;
 using SharpDX.Direct3D9;
 using PoeHUD.Framework;
 using PoeHUD.Poe.RemoteMemoryObjects;
+using System.Threading;
 
 namespace MapsExchange
 {
@@ -157,6 +158,18 @@ namespace MapsExchange
                 Color.Yellow,
                 Color.YellowGreen
             };
+            API.SubscribePluginEvent("StashUpdate", ExternalUpdateStashes);
+        }
+        private void ExternalUpdateStashes(object[] args)
+        {
+            if (!Settings.Enable.Value) return;
+            Thread.Sleep(70);
+            CurrentStashAddr = -1;
+        }
+
+        public override void OnPluginDestroyForHotReload()
+        {
+            API.UnsubscribePluginEvent("StashUpdate");
         }
 
         private long CurrentStashAddr;
@@ -196,18 +209,6 @@ namespace MapsExchange
                 CurrentStashAddr = visibleStash.Address;
                 UpdateData(items);
             }
-
-          
-
-            /* doesn't work
-            if(ingameState.UIHover != null)
-            {
-                var inventElement = ingameState.UIHover.AsObject<NormalInventoryItem>();
-                if(inventElement.Item != null)
-                LogMessage(inventElement.Item.Path, 0);
-                HiglightAllMaps(new List<NormalInventoryItem>() { inventElement });
-            }
-            */
         }
 
         private void DrawPlayerInvMaps()
@@ -237,10 +238,6 @@ namespace MapsExchange
         private void UpdateData(List<NormalInventoryItem> items)
         {
             MapItems = new List<MapItem>();
-            var bonusComp = GameController.Game.IngameState.ServerData.BonusCompletedAreas;
-            var comp = GameController.Game.IngameState.ServerData.CompletedAreas;
-            var shEld = GameController.Game.IngameState.ServerData.ShaperElderAreas;
-
 
             foreach (var invItem in items)
             {
@@ -265,13 +262,7 @@ namespace MapsExchange
                 var mapItem = new MapItem(bit.BaseName, drawRect);
                 var mapComponent = item.GetComponent<PoeHUD.Poe.Components.Map>();
 
-                if (comp.Contains(mapComponent.Area))
-                    mapItem.Completed++;
-                if (bonusComp.Contains(mapComponent.Area))
-                    mapItem.Completed++;
-
-                mapItem.ShaperElder = shEld.Contains(mapComponent.Area);
-
+  
                 mapItem.Penalty = LevelXpPenalty(mapComponent.Area.AreaLevel);
                 MapItems.Add(mapItem);
             }
@@ -310,22 +301,6 @@ namespace MapsExchange
             foreach (var drapMap in MapItems)
             {
                 Graphics.DrawFrame(drapMap.DrawRect, Settings.BordersWidth, drapMap.DrawColor);
-
-                if(drapMap.Completed == 0)
-                    Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/circle2.png"), drapMap.DrawRect, Color.Red);
-                else if (drapMap.Completed == 1)
-                    Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/circle2.png"), drapMap.DrawRect, Color.Yellow);
-
-
-                if (drapMap.ShaperElder)
-                {
-                    var bgRect = drapMap.DrawRect;
-                    bgRect.Left = bgRect.Right - 25;
-                    bgRect.Bottom = bgRect.Top + 17;
-
-                    Graphics.DrawBox(bgRect, Color.Black);
-                    Graphics.DrawText("S/E", 15, drapMap.DrawRect.TopRight, Color.Yellow, FontDrawFlags.Top | FontDrawFlags.Right);
-                }
             }
         }
 
@@ -333,6 +308,10 @@ namespace MapsExchange
 
         private void HiglightAllMaps(List<NormalInventoryItem> items)
         {
+            var bonusComp = GameController.Game.IngameState.ServerData.BonusCompletedAreas;
+            var comp = GameController.Game.IngameState.ServerData.CompletedAreas;
+            var shEld = GameController.Game.IngameState.ServerData.ShaperElderAreas;
+
             foreach (var item in items)
             {
                 var entity = item.Item;
@@ -351,10 +330,35 @@ namespace MapsExchange
                 drawRect.Right -= offset;
                 drawRect.Left += offset;
 
+                int Completed = 0;
+                bool ShaperElder = false;
+
+                if (comp.Contains(mapComponent.Area))
+                    Completed++;
+                if (bonusComp.Contains(mapComponent.Area))
+                    Completed++;
+
+                ShaperElder = shEld.Contains(mapComponent.Area);
+
+                if (Completed == 0)
+                    Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/circle2.png"), drawRect, Color.Red);
+                else if (Completed == 1)
+                    Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/circle2.png"), drawRect, Color.Yellow);
+
+
+                if (ShaperElder)
+                {
+                    var bgRect = drawRect;
+                    bgRect.Left = bgRect.Right - 25;
+                    bgRect.Bottom = bgRect.Top + 17;
+
+                    Graphics.DrawBox(bgRect, Color.Black);
+                    Graphics.DrawText("S/E", 15, drawRect.TopRight, Color.Yellow, FontDrawFlags.Top | FontDrawFlags.Right);
+                }
 
                 if (Settings.ShowPenalty.Value)
                 {
-                    var penalty =  LevelXpPenalty(mapComponent.Area.AreaLevel);
+                    var penalty = LevelXpPenalty(mapComponent.Area.AreaLevel);
                     var textColor = Color.Lerp(Color.Red, Color.Green, (float)penalty);
                     //textColor.A = (byte)(255f * (1f - (float)penalty) * 20f);
 
@@ -363,7 +367,7 @@ namespace MapsExchange
 
                     Graphics.DrawBox(new RectangleF(drawRect.X + drawRect.Width / 2 - textSize.Width / 2, drawRect.Y + drawRect.Height - textSize.Height, textSize.Width, textSize.Height), Color.Black);
 
-                    Graphics.DrawText(labelText, 20, new Vector2(drawRect.Center.X, drawRect.Bottom), 
+                    Graphics.DrawText(labelText, 20, new Vector2(drawRect.Center.X, drawRect.Bottom),
                         textColor, FontDrawFlags.Center | FontDrawFlags.Bottom);
                 }
             }
@@ -409,8 +413,6 @@ namespace MapsExchange
             public double Penalty;
             public RectangleF DrawRect;
             public Color DrawColor = Color.Transparent;
-            public int Completed;
-            public bool ShaperElder;
         }
     }
 }
