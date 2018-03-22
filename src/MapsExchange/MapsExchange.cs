@@ -160,6 +160,9 @@ namespace MapsExchange
             };
             API.SubscribePluginEvent("StashUpdate", ExternalUpdateStashes);
         }
+
+    
+
         private void ExternalUpdateStashes(object[] args)
         {
             if (!Settings.Enable.Value) return;
@@ -179,6 +182,7 @@ namespace MapsExchange
         public override void Render()
         {
             DrawPlayerInvMaps();
+            DrawAtlasMaps();
 
             var ingameState = GameController.Game.IngameState;
             var stash = ingameState.ServerData.StashPanel;
@@ -211,6 +215,110 @@ namespace MapsExchange
             }
         }
 
+        private bool LastVisible;
+        private List<WorldArea> CompletedMaps;
+        private List<WorldArea> BonusCompletedMaps;
+        private void DrawAtlasMaps()
+        {
+            if (!Settings.ShowOnAtlas.Value) return;
+
+            var atlas = GameController.Game.IngameState.IngameUi.AtlasPanel;
+            if(LastVisible != atlas.IsVisible || CompletedMaps == null)
+            {
+                LastVisible = atlas.IsVisible;
+                if (LastVisible)
+                {
+                    CompletedMaps = GameController.Game.IngameState.ServerData.CompletedAreas;
+                    BonusCompletedMaps = GameController.Game.IngameState.ServerData.BonusCompletedAreas;
+                }
+            }
+
+            if (!atlas.IsVisible) return;
+
+            var root = atlas.GetChildAtIndex(0);
+            var rootPos = new Vector2(root.X, root.Y);
+            var scale = root.Scale;
+
+            foreach (var atlasMap in GameController.Files.AtlasNodes.EntriesList)
+            {
+                var area = atlasMap.Area;
+                var mapName = area.Name;
+                if (mapName.Contains("Realm")) continue;
+
+                var centerPos = (atlasMap.Pos * 5.69f + rootPos) * scale;
+
+
+                var textPos = centerPos;
+                textPos.Y -= 30 * scale;
+                var testSize = (int)Math.Round(Settings.TextSize.Value * scale);
+                var fontFlags = FontDrawFlags.Center | FontDrawFlags.Bottom;
+
+
+                byte textTransp;
+                Color textBgColor;
+                bool fill;
+                Color fillColor;
+                if (BonusCompletedMaps.Contains(area))
+                {
+                    textTransp = Settings.BonusCompletedTextTransparency.Value;
+                    textBgColor = Settings.BonusCompletedTextBg.Value;
+                    fill = Settings.BonusCompletedFilledCircle.Value;
+                    fillColor = Settings.BonusCompletedFillColor.Value;
+                }
+                else if (CompletedMaps.Contains(area))
+                {
+                    textTransp = Settings.CompletedTextTransparency.Value;
+                    textBgColor = Settings.CompletedTextBg.Value;
+                    fill = Settings.CompletedFilledCircle.Value;
+                    fillColor = Settings.CompletedFillColor.Value;
+                }
+                else
+                {
+                    textTransp = Settings.UnCompletedTextTransparency.Value;
+                    textBgColor = Settings.UnCompletedTextBg.Value;
+                    fill = Settings.UnCompletedFilledCircle.Value;
+                    fillColor = Settings.UnCompletedFillColor.Value;
+                }
+
+                Color textColor = Settings.WhiteMapColor.Value;
+
+                if (area.AreaLevel >= 78)
+                    textColor = Settings.RedMapColor.Value;
+                else if (area.AreaLevel >= 73)
+                    textColor = Settings.YellowMapColor.Value;
+
+                textColor.A = textTransp;
+
+                Graphics.DrawText(mapName, testSize, textPos, textColor, fontFlags);
+
+                var mapNameSize = Graphics.MeasureText(mapName, testSize, fontFlags);
+                mapNameSize.Width += 5;
+                Graphics.DrawBox(new RectangleF(textPos.X - mapNameSize.Width / 2, textPos.Y - mapNameSize.Height, mapNameSize.Width, mapNameSize.Height), textBgColor);
+
+                var imgRectSize = 60 * scale;
+                var imgDrawRect = new RectangleF(centerPos.X - imgRectSize / 2, centerPos.Y - imgRectSize / 2, imgRectSize, imgRectSize);
+
+                if (fill)
+                    Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/AtlasMapCircleFilled.png"), imgDrawRect, fillColor);
+
+                Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/AtlasMapCircle.png"), imgDrawRect, Color.Black);
+
+
+                if(Settings.ShowAmount.Value)
+                {
+                    if (Settings.MapStashAmount.ContainsKey(mapName))
+                    {
+                        var amount = Settings.MapStashAmount[mapName];
+                        var mapCountSize = Graphics.MeasureText(amount.ToString(), testSize, fontFlags);
+                        mapCountSize.Width += 6;
+                        Graphics.DrawBox(new RectangleF(centerPos.X - mapCountSize.Width / 2, centerPos.Y - mapCountSize.Height / 2, mapCountSize.Width, mapCountSize.Height), Color.Black);
+                        textColor.A = 255;
+                        Graphics.DrawText(amount.ToString(), testSize, centerPos, textColor, FontDrawFlags.Center | FontDrawFlags.VerticalCenter);
+                    }
+                }
+            }
+        }
+
         private void DrawPlayerInvMaps()
         {
             var ingameState = GameController.Game.IngameState;
@@ -238,6 +346,7 @@ namespace MapsExchange
         private void UpdateData(List<NormalInventoryItem> items)
         {
             MapItems = new List<MapItem>();
+            Settings.MapStashAmount.Clear();
 
             foreach (var invItem in items)
             {
@@ -258,11 +367,16 @@ namespace MapsExchange
                 drawRect.Width -= width + spacing * 2;
                 drawRect.Height -= width + spacing * 2;
 
+                string baseName = bit.BaseName;
 
-                var mapItem = new MapItem(bit.BaseName, drawRect);
+                var mapItem = new MapItem(baseName, drawRect);
                 var mapComponent = item.GetComponent<PoeHUD.Poe.Components.Map>();
 
-  
+                var areaName = mapComponent.Area.Name;
+                if (!Settings.MapStashAmount.ContainsKey(areaName))
+                    Settings.MapStashAmount.Add(areaName, 0);
+                Settings.MapStashAmount[areaName]++;
+
                 mapItem.Penalty = LevelXpPenalty(mapComponent.Area.AreaLevel);
                 MapItems.Add(mapItem);
             }
