@@ -44,6 +44,9 @@ namespace MapsExchange
         [Menu("Show OnAtlas", -100)]
         public ToggleNode ShowOnAtlas { get; set; } = true;
 
+        [Menu("Maps Tab (to check amount)", -99, -100)]
+        public StashTabNode MapTabNode { get; set; } = new StashTabNode();
+
         [Menu("Show UnCompleted", 0, -100)]
         public ToggleNode ShowUnCompleted { get; set; } = true;
 

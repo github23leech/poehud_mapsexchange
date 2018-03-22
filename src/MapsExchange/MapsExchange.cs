@@ -211,7 +211,9 @@ namespace MapsExchange
             if (CurrentStashAddr != visibleStash.Address)
             {
                 CurrentStashAddr = visibleStash.Address;
-                UpdateData(items);
+
+                bool checkMaps = Settings.MapTabNode.VisibleIndex == stash.IndexVisibleStash;
+               UpdateData(items, checkMaps);
             }
         }
 
@@ -343,10 +345,12 @@ namespace MapsExchange
             }
         }
 
-        private void UpdateData(List<NormalInventoryItem> items)
+        private void UpdateData(List<NormalInventoryItem> items, bool checkAmount)
         {
             MapItems = new List<MapItem>();
-            Settings.MapStashAmount.Clear();
+
+            if (checkAmount)
+                Settings.MapStashAmount.Clear();
 
             foreach (var invItem in items)
             {
@@ -372,10 +376,13 @@ namespace MapsExchange
                 var mapItem = new MapItem(baseName, drawRect);
                 var mapComponent = item.GetComponent<PoeHUD.Poe.Components.Map>();
 
-                var areaName = mapComponent.Area.Name;
-                if (!Settings.MapStashAmount.ContainsKey(areaName))
-                    Settings.MapStashAmount.Add(areaName, 0);
-                Settings.MapStashAmount[areaName]++;
+                if (checkAmount)
+                {
+                    var areaName = mapComponent.Area.Name;
+                    if (!Settings.MapStashAmount.ContainsKey(areaName))
+                        Settings.MapStashAmount.Add(areaName, 0);
+                    Settings.MapStashAmount[areaName]++;
+                }
 
                 mapItem.Penalty = LevelXpPenalty(mapComponent.Area.AreaLevel);
                 MapItems.Add(mapItem);
