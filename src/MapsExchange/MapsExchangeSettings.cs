@@ -40,9 +40,11 @@ namespace MapsExchange
         public ColorNode RedMapColor { get; set; } = new Color(1, 0.3f, 0.3f, 1f);
 
 
-
         [Menu("Show OnAtlas", -100)]
         public ToggleNode ShowOnAtlas { get; set; } = true;
+
+        [Menu("Note: Press CTRL whe atlas opened to see map level end exp penalty", -88, -100)]
+        public EmptyNode AtlasNote { get; set; }
 
         [Menu("Maps Tab (to check amount)", -99, -100)]
         public StashTabNode MapTabNode { get; set; } = new StashTabNode();

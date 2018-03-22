@@ -297,6 +297,25 @@ namespace MapsExchange
                 mapNameSize.Width += 5;
                 Graphics.DrawBox(new RectangleF(textPos.X - mapNameSize.Width / 2, textPos.Y - mapNameSize.Height, mapNameSize.Width, mapNameSize.Height), textBgColor);
 
+
+                if (WinApi.IsKeyDown(System.Windows.Forms.Keys.ControlKey))
+                {
+                    var penalty = LevelXpPenalty(area.AreaLevel);
+                    var penaltyTextColor = Color.Lerp(Color.Red, Color.Green, (float)penalty);
+                    var labelText = $"{penalty:p0}";
+                    var textSize = Graphics.MeasureText(labelText, testSize, FontDrawFlags.Left | FontDrawFlags.Bottom);
+                    textSize.Width += 6;
+                    var penaltyRect = new RectangleF(textPos.X + mapNameSize.Width / 2, textPos.Y - textSize.Height, textSize.Width, textSize.Height);
+                    Graphics.DrawBox(penaltyRect, Color.Black);
+                    Graphics.DrawText(labelText, testSize, penaltyRect.Center, penaltyTextColor, FontDrawFlags.Center | FontDrawFlags.VerticalCenter);
+
+                    labelText = $"{area.AreaLevel}";
+                    textSize = Graphics.MeasureText(labelText, testSize, FontDrawFlags.Right | FontDrawFlags.Bottom);
+                    penaltyRect = new RectangleF(textPos.X - mapNameSize.Width / 2 - textSize.Width, textPos.Y - textSize.Height, textSize.Width, textSize.Height);
+                    Graphics.DrawBox(penaltyRect, Color.Black);
+                    Graphics.DrawText(labelText, testSize, penaltyRect.Center, Color.White, FontDrawFlags.Center | FontDrawFlags.VerticalCenter);
+                }
+
                 var imgRectSize = 60 * scale;
                 var imgDrawRect = new RectangleF(centerPos.X - imgRectSize / 2, centerPos.Y - imgRectSize / 2, imgRectSize, imgRectSize);
 
