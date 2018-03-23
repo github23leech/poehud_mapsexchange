@@ -458,10 +458,28 @@ namespace MapsExchange
 
         private void HiglightAllMaps(List<NormalInventoryItem> items)
         {
-            var bonusComp = GameController.Game.IngameState.ServerData.BonusCompletedAreas;
-            var comp = GameController.Game.IngameState.ServerData.CompletedAreas;
-            var shEld = GameController.Game.IngameState.ServerData.ShaperElderAreas;
-            var upgradedMaps = GameController.Game.IngameState.ServerData.ShapedMaps;
+            IngameState ingameState = GameController.Game.IngameState;
+            ServerData serverData = ingameState.ServerData;
+            var bonusComp = serverData.BonusCompletedAreas;
+            var comp = serverData.CompletedAreas;
+            var shEld = serverData.ShaperElderAreas;
+            var upgradedMaps = serverData.ShapedMaps;
+
+            bool disableOnHover = false;
+            var hoverRect = ingameState.UIHover;
+            RectangleF disableOnHoverRect = new RectangleF();
+
+            var inventoryItemIcon = ingameState.UIHover.AsObject<HoverItemIcon>();
+            if (inventoryItemIcon != null)
+            {
+                Element tooltip = inventoryItemIcon.Tooltip;
+                if(tooltip != null)
+                {
+                    disableOnHover = true;
+                    disableOnHoverRect = tooltip.GetClientRect();
+                }
+            }
+
 
             foreach (var item in items)
             {
@@ -475,6 +493,9 @@ namespace MapsExchange
                 var mapComponent = entity.GetComponent<PoeHUD.Poe.Components.Map>();
 
                 var drawRect = item.GetClientRect();
+
+                if (disableOnHover && disableOnHoverRect.Intersects(drawRect))
+                    continue;
 
                 var offset = 3;
                 drawRect.Top += offset;
