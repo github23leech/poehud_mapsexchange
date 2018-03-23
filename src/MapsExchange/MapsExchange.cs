@@ -178,7 +178,7 @@ namespace MapsExchange
         private long CurrentStashAddr;
 
         private Dictionary<string, int> CachedDropLvl = new Dictionary<string, int>();
-
+        
         public override void Render()
         {
             DrawPlayerInvMaps();
@@ -205,15 +205,13 @@ namespace MapsExchange
             }
 
             HiglightExchangeMaps();
-
             HiglightAllMaps(items);
 
             if (CurrentStashAddr != visibleStash.Address)
             {
                 CurrentStashAddr = visibleStash.Address;
-
-                bool checkMaps = Settings.MapTabNode.VisibleIndex == stash.IndexVisibleStash;
-               UpdateData(items, checkMaps);
+                bool updateMapsCount = Settings.MapTabNode.VisibleIndex == stash.IndexVisibleStash;
+               UpdateData(items, updateMapsCount);
             }
         }
 
@@ -320,8 +318,6 @@ namespace MapsExchange
                     var penaltyRect = new RectangleF(textPos.X + mapNameSize.Width / 2, textPos.Y - textSize.Height, textSize.Width, textSize.Height);
                     Graphics.DrawBox(penaltyRect, Color.Black);
                     Graphics.DrawText(labelText, testSize, penaltyRect.Center, penaltyTextColor, FontDrawFlags.Center | FontDrawFlags.VerticalCenter);
-
-                 
 
                     labelText = $"{areaLvl}";
                     textSize = Graphics.MeasureText(labelText, testSize, FontDrawFlags.Right | FontDrawFlags.Bottom);
@@ -465,6 +461,7 @@ namespace MapsExchange
             var bonusComp = GameController.Game.IngameState.ServerData.BonusCompletedAreas;
             var comp = GameController.Game.IngameState.ServerData.CompletedAreas;
             var shEld = GameController.Game.IngameState.ServerData.ShaperElderAreas;
+            var upgradedMaps = GameController.Game.IngameState.ServerData.ShapedMaps;
 
             foreach (var item in items)
             {
@@ -485,14 +482,14 @@ namespace MapsExchange
                 drawRect.Left += offset;
 
                 int Completed = 0;
-                bool ShaperElder = false;
 
                 if (comp.Contains(mapComponent.Area))
                     Completed++;
                 if (bonusComp.Contains(mapComponent.Area))
                     Completed++;
 
-                ShaperElder = shEld.Contains(mapComponent.Area);
+                var ShaperElder = shEld.Contains(mapComponent.Area);
+                var upgraded = upgradedMaps.Contains(mapComponent.Area);
 
                 if (Completed == 0)
                     Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/circle2.png"), drawRect, Color.Red);
@@ -512,7 +509,10 @@ namespace MapsExchange
 
                 if (Settings.ShowPenalty.Value)
                 {
-                    var penalty = LevelXpPenalty(mapComponent.Area.AreaLevel);
+                    var areaLvl = mapComponent.Area.AreaLevel;
+                    if (upgraded)
+                        areaLvl += 5;
+                    var penalty = LevelXpPenalty(areaLvl);
                     var textColor = Color.Lerp(Color.Red, Color.Green, (float)penalty);
                     //textColor.A = (byte)(255f * (1f - (float)penalty) * 20f);
 
