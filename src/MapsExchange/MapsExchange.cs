@@ -220,6 +220,7 @@ namespace MapsExchange
         private bool LastVisible;
         private List<WorldArea> CompletedMaps;
         private List<WorldArea> BonusCompletedMaps;
+        private List<WorldArea> ShapeUpgradedMaps;
         private void DrawAtlasMaps()
         {
             if (!Settings.ShowOnAtlas.Value) return;
@@ -232,6 +233,7 @@ namespace MapsExchange
                 {
                     CompletedMaps = GameController.Game.IngameState.ServerData.CompletedAreas;
                     BonusCompletedMaps = GameController.Game.IngameState.ServerData.BonusCompletedAreas;
+                    ShapeUpgradedMaps = GameController.Game.IngameState.ServerData.ShapedMaps;
                 }
             }
 
@@ -300,7 +302,17 @@ namespace MapsExchange
 
                 if (WinApi.IsKeyDown(System.Windows.Forms.Keys.ControlKey))
                 {
-                    var penalty = LevelXpPenalty(area.AreaLevel);
+                    var upgraded = ShapeUpgradedMaps.Contains(area);
+                    var areaLvlColor = Color.White;
+                    var areaLvl = area.AreaLevel;
+
+                    if (upgraded)
+                    {
+                        areaLvl += 5;
+                        areaLvlColor = Color.Orange;
+                    }
+
+                    var penalty = LevelXpPenalty(areaLvl);
                     var penaltyTextColor = Color.Lerp(Color.Red, Color.Green, (float)penalty);
                     var labelText = $"{penalty:p0}";
                     var textSize = Graphics.MeasureText(labelText, testSize, FontDrawFlags.Left | FontDrawFlags.Bottom);
@@ -309,11 +321,13 @@ namespace MapsExchange
                     Graphics.DrawBox(penaltyRect, Color.Black);
                     Graphics.DrawText(labelText, testSize, penaltyRect.Center, penaltyTextColor, FontDrawFlags.Center | FontDrawFlags.VerticalCenter);
 
-                    labelText = $"{area.AreaLevel}";
+                 
+
+                    labelText = $"{areaLvl}";
                     textSize = Graphics.MeasureText(labelText, testSize, FontDrawFlags.Right | FontDrawFlags.Bottom);
                     penaltyRect = new RectangleF(textPos.X - mapNameSize.Width / 2 - textSize.Width, textPos.Y - textSize.Height, textSize.Width, textSize.Height);
                     Graphics.DrawBox(penaltyRect, Color.Black);
-                    Graphics.DrawText(labelText, testSize, penaltyRect.Center, Color.White, FontDrawFlags.Center | FontDrawFlags.VerticalCenter);
+                    Graphics.DrawText(labelText, testSize, penaltyRect.Center, areaLvlColor, FontDrawFlags.Center | FontDrawFlags.VerticalCenter);
                 }
 
                 var imgRectSize = 60 * scale;
