@@ -465,8 +465,9 @@ namespace MapsExchange
 
             foreach (var item in items)
             {
-                var entity = item.Item;
                 if (item == null) continue;
+                var entity = item.Item;
+                if (entity == null) continue;
 
                 BaseItemType bit = GameController.Files.BaseItemTypes.Translate(entity.Path);
                 if (bit == null) continue;
@@ -489,7 +490,7 @@ namespace MapsExchange
                     Completed++;
 
                 var ShaperElder = shEld.Contains(mapComponent.Area);
-                var upgraded = upgradedMaps.Contains(mapComponent.Area);
+
 
                 if (Completed == 0)
                     Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/circle2.png"), drawRect, Color.Red);
@@ -509,9 +510,12 @@ namespace MapsExchange
 
                 if (Settings.ShowPenalty.Value)
                 {
+                    var mods = entity.GetComponent<Mods>();
                     var areaLvl = mapComponent.Area.AreaLevel;
-                    if (upgraded)
+
+                    if (mods.ItemMods.Any(x => x.Name == "MapShaped"))//Shaper orb upgraded
                         areaLvl += 5;
+
                     var penalty = LevelXpPenalty(areaLvl);
                     var textColor = Color.Lerp(Color.Red, Color.Green, (float)penalty);
                     //textColor.A = (byte)(255f * (1f - (float)penalty) * 20f);
