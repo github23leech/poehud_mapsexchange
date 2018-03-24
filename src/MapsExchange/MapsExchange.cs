@@ -11,11 +11,13 @@ using SharpDX.Direct3D9;
 using PoeHUD.Framework;
 using PoeHUD.Poe.RemoteMemoryObjects;
 using System.Threading;
+using System.Windows.Forms;
 
 namespace MapsExchange
 {
     public class MapsExchange : BaseSettingsPlugin<MapsExchangeSettings>
     {
+        private PoeTradeProcessor TradeProcessor = new PoeTradeProcessor();
         private List<MapItem> MapItems = new List<MapItem>();
 
         private Color[] SelectColors;
@@ -159,9 +161,16 @@ namespace MapsExchange
                 Color.YellowGreen
             };
             API.SubscribePluginEvent("StashUpdate", ExternalUpdateStashes);
+
+            PoeHUD.Hud.Menu.MenuPlugin.KeyboardMouseEvents.MouseDownExt += KeyboardMouseEvents_MouseDownExt;
         }
 
-    
+
+        private bool MouseClick;
+        private void KeyboardMouseEvents_MouseDownExt(object sender, Gma.System.MouseKeyHook.MouseEventExtArgs e)
+        {
+            MouseClick = true;
+        }
 
         private void ExternalUpdateStashes(object[] args)
         {
@@ -172,6 +181,7 @@ namespace MapsExchange
 
         public override void OnPluginDestroyForHotReload()
         {
+            PoeHUD.Hud.Menu.MenuPlugin.KeyboardMouseEvents.MouseDownExt -= KeyboardMouseEvents_MouseDownExt;
             API.UnsubscribePluginEvent("StashUpdate");
         }
 
@@ -186,33 +196,37 @@ namespace MapsExchange
 
             var ingameState = GameController.Game.IngameState;
             var stash = ingameState.ServerData.StashPanel;
-            if (!stash.IsVisible)
+            if (stash.IsVisible)
+            {
+                var visibleStash = stash.VisibleStash;
+
+                if (visibleStash != null)
+                {
+                    var items = visibleStash.VisibleInventoryItems;
+                    if (items != null)
+                    {
+                        HiglightExchangeMaps();
+                        HiglightAllMaps(items);
+
+                        if (CurrentStashAddr != visibleStash.Address)
+                        {
+                            CurrentStashAddr = visibleStash.Address;
+                            bool updateMapsCount = Settings.MapTabNode.VisibleIndex == stash.IndexVisibleStash;
+                            UpdateData(items, updateMapsCount);
+                        }
+                    }
+                    else
+                    {
+                        CurrentStashAddr = -1;
+                    }
+                }
+            }
+            else
             {
                 CurrentStashAddr = -1;
-                return;
             }
 
-            var visibleStash = stash.VisibleStash;
-
-            if (visibleStash == null)
-                return;
-
-            var items = visibleStash.VisibleInventoryItems;
-            if (items == null)
-            {
-                CurrentStashAddr = -1;
-                return;
-            }
-
-            HiglightExchangeMaps();
-            HiglightAllMaps(items);
-
-            if (CurrentStashAddr != visibleStash.Address)
-            {
-                CurrentStashAddr = visibleStash.Address;
-                bool updateMapsCount = Settings.MapTabNode.VisibleIndex == stash.IndexVisibleStash;
-               UpdateData(items, updateMapsCount);
-            }
+            MouseClick = false;
         }
 
         private bool LastVisible;
@@ -295,10 +309,10 @@ namespace MapsExchange
 
                 var mapNameSize = Graphics.MeasureText(mapName, testSize, fontFlags);
                 mapNameSize.Width += 5;
-                Graphics.DrawBox(new RectangleF(textPos.X - mapNameSize.Width / 2, textPos.Y - mapNameSize.Height, mapNameSize.Width, mapNameSize.Height), textBgColor);
+                var nameBoxRect = new RectangleF(textPos.X - mapNameSize.Width / 2, textPos.Y - mapNameSize.Height, mapNameSize.Width, mapNameSize.Height);
+                Graphics.DrawBox(nameBoxRect, textBgColor);
 
-
-                if (WinApi.IsKeyDown(System.Windows.Forms.Keys.ControlKey))
+                if (WinApi.IsKeyDown(Keys.ControlKey))
                 {
                     var upgraded = ShapeUpgradedMaps.Contains(area);
                     var areaLvlColor = Color.White;
@@ -324,6 +338,28 @@ namespace MapsExchange
                     penaltyRect = new RectangleF(textPos.X - mapNameSize.Width / 2 - textSize.Width, textPos.Y - textSize.Height, textSize.Width, textSize.Height);
                     Graphics.DrawBox(penaltyRect, Color.Black);
                     Graphics.DrawText(labelText, testSize, penaltyRect.Center, areaLvlColor, FontDrawFlags.Center | FontDrawFlags.VerticalCenter);
+
+
+                    if(Settings.ShowBuyButton.Value)
+                    {
+                        var butTextWidth = 40;
+                        var buyButtonRect = new RectangleF(textPos.X - butTextWidth / 2, textPos.Y - testSize * 2, butTextWidth, testSize);
+                        Graphics.DrawBox(buyButtonRect, Color.Black);
+
+                        Graphics.DrawText("Buy$", testSize, buyButtonRect.Center, Color.Yellow, FontDrawFlags.Center | FontDrawFlags.VerticalCenter);
+
+                        if (MouseClick)
+                        {
+                            var prevMousePos = Mouse.GetCursorPosition();
+                            var windowOffset = GameController.Window.GetWindowRectangle().TopLeft;
+
+                            if (buyButtonRect.Contains(prevMousePos - windowOffset))
+                            {
+                                string uniqTest = Memory.ReadStringU(Memory.ReadLong(atlasMap.Address + 0x3c, 0));
+                                TradeProcessor.OpenBuyMap(mapName, !string.IsNullOrEmpty(uniqTest) && uniqTest.Contains("Uniq"));
+                            }
+                        }
+                    }
                 }
 
                 var imgRectSize = 60 * scale;
@@ -453,6 +489,7 @@ namespace MapsExchange
                 Graphics.DrawFrame(drapMap.DrawRect, Settings.BordersWidth, drapMap.DrawColor);
             }
         }
+
 
 
 

@@ -33,6 +33,10 @@
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Gma.System.MouseKeyHook">
+      <HintPath>..\..\..\..\..\..\..\..\Release\Gma.System.MouseKeyHook.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="PoeHUD">
       <HintPath>..\..\..\..\PoeHUD.exe</HintPath>
       <Private>False</Private>
@@ -62,6 +66,8 @@
   <ItemGroup>
     <Compile Include="MapsExchange.cs" />
     <Compile Include="MapsExchangeSettings.cs" />
+    <Compile Include="Mouse.cs" />
+    <Compile Include="PoeTradeProcessor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

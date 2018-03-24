@@ -96,5 +96,8 @@ namespace MapsExchange
         public ColorNode BonusCompletedFillColor { get; set; } = new Color(0.1f, 0.9f, 0.1f, 0.01f);
 
         public Dictionary<string, int> MapStashAmount = new Dictionary<string, int>();
+
+        [Menu("Show Buy Button")]
+        public ToggleNode ShowBuyButton { get; set; } = true;
     }
 }
