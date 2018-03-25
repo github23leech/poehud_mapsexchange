@@ -342,11 +342,11 @@ namespace MapsExchange
 
                     if(Settings.ShowBuyButton.Value)
                     {
-                        var butTextWidth = 40;
+                        var butTextWidth = 50 * scale;
                         var buyButtonRect = new RectangleF(textPos.X - butTextWidth / 2, textPos.Y - testSize * 2, butTextWidth, testSize);
-                        Graphics.DrawBox(buyButtonRect, Color.Black);
-
-                        Graphics.DrawText("Buy$", testSize, buyButtonRect.Center, Color.Yellow, FontDrawFlags.Center | FontDrawFlags.VerticalCenter);
+                        //Graphics.DrawBox(buyButtonRect, Color.Black);
+                        Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/buy.png"), buyButtonRect, new Color(255, 255, 255, 200));
+                        //Graphics.DrawText("Buy$", testSize, buyButtonRect.Center, Color.Yellow, FontDrawFlags.Center | FontDrawFlags.VerticalCenter);
 
                         if (MouseClick)
                         {
