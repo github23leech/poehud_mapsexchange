@@ -391,7 +391,7 @@ namespace MapsExchange
 
                 Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/AtlasMapCircle.png"), imgDrawRect, Color.Black);
 
-                if(Settings.ShowAmount.Value && Vector2.Distance(atlasMap.Pos, new Vector2(294.979f, 386.641f)) < 50)
+                if(Settings.ShowAmount.Value)
                 {
                     if(IsUniq(atlasMap))
                         mapName += ":Uniq";
