@@ -6,7 +6,6 @@ using PoeHUD.Poe.Elements;
 using PoeHUD.Models;
 using SharpDX;
 using PoeHUD.Poe.Components;
-using PoeHUD.Poe.EntityComponents;
 using System;
 using SharpDX.Direct3D9;
 using PoeHUD.Framework;
@@ -357,8 +356,7 @@ namespace MapsExchange
 
                             if (buyButtonRect.Contains(prevMousePos - windowOffset))
                             {
-                                string uniqTest = Memory.ReadStringU(Memory.ReadLong(atlasMap.Address + 0x3c, 0));
-                                TradeProcessor.OpenBuyMap(mapName, !string.IsNullOrEmpty(uniqTest) && uniqTest.Contains("Uniq"));
+                                TradeProcessor.OpenBuyMap(mapName, IsUniq(atlasMap));
                             }
                         }
                     }
@@ -393,14 +391,13 @@ namespace MapsExchange
 
                 Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/AtlasMapCircle.png"), imgDrawRect, Color.Black);
 
-
-     
-
-                if(Settings.ShowAmount.Value)
+                if(Settings.ShowAmount.Value && Vector2.Distance(atlasMap.Pos, new Vector2(294.979f, 386.641f)) < 50)
                 {
-                    if (Settings.MapStashAmount.ContainsKey(mapName))
+                    if(IsUniq(atlasMap))
+                        mapName += ":Uniq";
+                    
+                    if (Settings.MapStashAmount.TryGetValue(mapName, out var amount))
                     {
-                        var amount = Settings.MapStashAmount[mapName];
                         var mapCountSize = Graphics.MeasureText(amount.ToString(), testSize, fontFlags);
                         mapCountSize.Width += 6;
                         Graphics.DrawBox(new RectangleF(centerPos.X - mapCountSize.Width / 2, centerPos.Y - mapCountSize.Height / 2, mapCountSize.Width, mapCountSize.Height), Color.Black);
@@ -409,6 +406,12 @@ namespace MapsExchange
                     }
                 }
             }
+        }
+
+        private bool IsUniq(AtlasNode atlasMap)
+        {
+            string uniqTest = Memory.ReadStringU(Memory.ReadLong(atlasMap.Address + 0x3c, 0));
+            return (!string.IsNullOrEmpty(uniqTest) && uniqTest.Contains("Uniq")) || Vector2.Distance(atlasMap.Pos, new Vector2(294.979f, 386.641f)) < 5;
         }
 
         private List<int> InventShapersOrbs = new List<int>();
@@ -491,6 +494,13 @@ namespace MapsExchange
                 if (checkAmount)
                 {
                     var areaName = mapComponent.Area.Name;
+                    var mods = item.GetComponent<Mods>();
+                    if (mods.ItemRarity == PoeHUD.Models.Enums.ItemRarity.Unique)
+                    {
+                        areaName = mods.UniqueName.Replace(" Map", string.Empty);
+                        areaName += ":Uniq";
+                    }
+
                     if (!Settings.MapStashAmount.ContainsKey(areaName))
                         Settings.MapStashAmount.Add(areaName, 0);
                     Settings.MapStashAmount[areaName]++;
