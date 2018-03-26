@@ -6,6 +6,7 @@ using PoeHUD.Poe.Elements;
 using PoeHUD.Models;
 using SharpDX;
 using PoeHUD.Poe.Components;
+using PoeHUD.Poe.EntityComponents;
 using System;
 using SharpDX.Direct3D9;
 using PoeHUD.Framework;
@@ -246,6 +247,7 @@ namespace MapsExchange
                     CompletedMaps = GameController.Game.IngameState.ServerData.CompletedAreas;
                     BonusCompletedMaps = GameController.Game.IngameState.ServerData.BonusCompletedAreas;
                     ShapeUpgradedMaps = GameController.Game.IngameState.ServerData.ShapedMaps;
+                    ScanPlayerInventForShapersOrb();
                 }
             }
 
@@ -365,11 +367,34 @@ namespace MapsExchange
                 var imgRectSize = 60 * scale;
                 var imgDrawRect = new RectangleF(centerPos.X - imgRectSize / 2, centerPos.Y - imgRectSize / 2, imgRectSize, imgRectSize);
 
+                if (InventShapersOrbs.Count > 0)
+                {
+                    var areaLvl = area.AreaLevel;
+
+                    if (!ShapeUpgradedMaps.Contains(area))
+                    {
+                        var tier = areaLvl - 67;
+
+                        if (InventShapersOrbs.Contains(tier))
+                        {
+                            var shapedRect = imgDrawRect;
+                            var sizeOffset = 30 * scale;
+                            shapedRect.Left -= sizeOffset;
+                            shapedRect.Right += sizeOffset;
+                            shapedRect.Top -= sizeOffset;
+                            shapedRect.Bottom += sizeOffset;
+                            Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/AtlasMapCircle.png"), shapedRect, new Color(155, 0, 255, 255));
+                        }
+                    }
+                }
+
                 if (fill)
                     Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/AtlasMapCircleFilled.png"), imgDrawRect, fillColor);
 
                 Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/AtlasMapCircle.png"), imgDrawRect, Color.Black);
 
+
+     
 
                 if(Settings.ShowAmount.Value)
                 {
@@ -383,6 +408,28 @@ namespace MapsExchange
                         Graphics.DrawText(amount.ToString(), testSize, centerPos, textColor, FontDrawFlags.Center | FontDrawFlags.VerticalCenter);
                     }
                 }
+            }
+        }
+
+        private List<int> InventShapersOrbs = new List<int>();
+        private void ScanPlayerInventForShapersOrb()
+        {
+            InventShapersOrbs.Clear();
+            var playerInvent = GameController.Game.IngameState.ServerData.GetPlayerInventoryByType(InventoryTypeE.Main);
+
+            foreach(var item in playerInvent.Items)
+            {
+                var path = item.Path;
+                if (string.IsNullOrEmpty(path) || !path.Contains("/MapUpgrades/")) continue;
+                if (!item.HasComponent<Base>()) continue;
+
+                var baseName = item.GetComponent<Base>().Name;
+                if (string.IsNullOrEmpty(baseName) || !baseName.Contains("Shaper's Orb")) continue;
+
+                var tierStr = baseName.Replace("Shaper's Orb (Tier ", string.Empty).Replace(")", string.Empty);
+                int tierValue;
+                if (int.TryParse(tierStr, out tierValue))
+                    InventShapersOrbs.Add(tierValue);
             }
         }
 
