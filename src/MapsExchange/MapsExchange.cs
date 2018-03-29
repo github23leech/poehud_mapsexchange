@@ -163,13 +163,20 @@ namespace MapsExchange
             API.SubscribePluginEvent("StashUpdate", ExternalUpdateStashes);
 
             PoeHUD.Hud.Menu.MenuPlugin.KeyboardMouseEvents.MouseDownExt += KeyboardMouseEvents_MouseDownExt;
+            PoeHUD.Hud.Menu.MenuPlugin.KeyboardMouseEvents.MouseMoveExt += KeyboardMouseEvents_MouseMoveExt;
+        }
+        private AtlasNode BuyAtlasNode;
+        private Vector2 MousePos;
+        private void KeyboardMouseEvents_MouseMoveExt(object sender, Gma.System.MouseKeyHook.MouseEventExtArgs e)
+        {
+            MousePos = GameController.Window.ScreenToClient(e.X, e.Y);
         }
 
 
-        private bool MouseClick;
         private void KeyboardMouseEvents_MouseDownExt(object sender, Gma.System.MouseKeyHook.MouseEventExtArgs e)
         {
-            MouseClick = true;
+            if (BuyAtlasNode == null) return;
+            TradeProcessor.OpenBuyMap(BuyAtlasNode.Area.Name, IsUniq(BuyAtlasNode));
         }
 
         private void ExternalUpdateStashes(object[] args)
@@ -182,6 +189,7 @@ namespace MapsExchange
         public override void OnPluginDestroyForHotReload()
         {
             PoeHUD.Hud.Menu.MenuPlugin.KeyboardMouseEvents.MouseDownExt -= KeyboardMouseEvents_MouseDownExt;
+            PoeHUD.Hud.Menu.MenuPlugin.KeyboardMouseEvents.MouseMoveExt -= KeyboardMouseEvents_MouseMoveExt;
             API.UnsubscribePluginEvent("StashUpdate");
         }
 
@@ -225,8 +233,6 @@ namespace MapsExchange
             {
                 CurrentStashAddr = -1;
             }
-
-            MouseClick = false;
         }
 
         private bool LastVisible;
@@ -255,7 +261,7 @@ namespace MapsExchange
             var root = atlas.GetChildAtIndex(0);
             var rootPos = new Vector2(root.X, root.Y);
             var scale = root.Scale;
-
+            BuyAtlasNode = null;
             foreach (var atlasMap in GameController.Files.AtlasNodes.EntriesList)
             {
                 var area = atlasMap.Area;
@@ -346,18 +352,18 @@ namespace MapsExchange
                         var butTextWidth = 50 * scale;
                         var buyButtonRect = new RectangleF(textPos.X - butTextWidth / 2, textPos.Y - testSize * 2, butTextWidth, testSize);
                         //Graphics.DrawBox(buyButtonRect, Color.Black);
-                        Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/buy.png"), buyButtonRect, new Color(255, 255, 255, 200));
+                        //Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/buy.png"), buyButtonRect, new Color(255, 255, 255, 200));
                         //Graphics.DrawText("Buy$", testSize, buyButtonRect.Center, Color.Yellow, FontDrawFlags.Center | FontDrawFlags.VerticalCenter);
-
-                        if (MouseClick)
+                        
+                        if(buyButtonRect.Contains(MousePos))
                         {
-                            var prevMousePos = Mouse.GetCursorPosition();
-                            var windowOffset = GameController.Window.GetWindowRectangle().TopLeft;
-
-                            if (buyButtonRect.Contains(prevMousePos - windowOffset))
-                            {
-                                TradeProcessor.OpenBuyMap(mapName, IsUniq(atlasMap));
-                            }
+                            Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/buy.png"), buyButtonRect, new Color(255, 255, 255, 255));
+                            Graphics.DrawFrame(buyButtonRect, 1, Color.White);
+                            BuyAtlasNode = atlasMap;
+                        }
+                        else
+                        {
+                            Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/buy.png"), buyButtonRect, new Color(255, 255, 255, 200));
                         }
                     }
                 }
