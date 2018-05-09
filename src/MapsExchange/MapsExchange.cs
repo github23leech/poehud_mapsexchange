@@ -177,6 +177,7 @@ namespace MapsExchange
         {
             if (BuyAtlasNode == null) return;
             TradeProcessor.OpenBuyMap(BuyAtlasNode.Area.Name, IsUniq(BuyAtlasNode));
+            BuyAtlasNode = null;
         }
 
         private void ExternalUpdateStashes(object[] args)
@@ -200,6 +201,7 @@ namespace MapsExchange
         public override void Render()
         {
             DrawPlayerInvMaps();
+            DrawNPCInvMaps();
             DrawAtlasMaps();
 
             var ingameState = GameController.Game.IngameState;
@@ -367,7 +369,10 @@ namespace MapsExchange
                         }
                     }
                 }
-
+                else
+                {
+                    BuyAtlasNode = null;
+                }
                 var imgRectSize = 60 * scale;
                 var imgDrawRect = new RectangleF(centerPos.X - imgRectSize / 2, centerPos.Y - imgRectSize / 2, imgRectSize, imgRectSize);
 
@@ -465,6 +470,58 @@ namespace MapsExchange
                 HiglightAllMaps(playerInvItems);
             }
         }
+
+        private void DrawNPCInvMaps()
+        {
+            var ingameState = GameController.Game.IngameState;
+
+            ServerData serverData = ingameState.ServerData;
+            var npcInv = serverData.NPCInventories;
+
+            if (npcInv == null || npcInv.Count == 0) return;
+
+            var bonusComp = serverData.BonusCompletedAreas;
+            var comp = serverData.CompletedAreas;
+
+            var drawListPos = new Vector2(200, 200);
+
+            foreach (var inv in npcInv)
+            {
+                foreach(var item in inv.Inventory.Items)
+                {
+                    var mapComponent = item.GetComponent<PoeHUD.Poe.Components.Map>();
+                    var mapArea = mapComponent.Area;
+                    if (bonusComp.Contains(mapArea)) continue;
+
+                    var color = Color.Yellow;
+                    if (!comp.Contains(mapArea))
+                        color = Color.Red;
+
+                    Graphics.DrawText(mapArea.Name, 20, drawListPos, color);
+                    drawListPos.Y += 20;
+                }
+            }
+
+            if (ingameState.IngameUi.InventoryPanel.IsVisible)
+            {
+                List<NormalInventoryItem> playerInvItems = new List<NormalInventoryItem>();
+                var inventoryZone = ingameState.IngameUi.InventoryPanel[PoeHUD.Models.Enums.InventoryIndex.PlayerInventory].InventoryUiElement;
+
+                foreach (Element element in inventoryZone.Children)
+                {
+                    var inventElement = element.AsObject<NormalInventoryItem>();
+
+                    if (inventElement.InventPosX < 0 || inventElement.InventPosY < 0)
+                    {
+                        continue;
+                    }
+                    playerInvItems.Add(inventElement);
+                }
+
+                HiglightAllMaps(playerInvItems);
+            }
+        }
+
 
         private void UpdateData(List<NormalInventoryItem> items, bool checkAmount)
         {
