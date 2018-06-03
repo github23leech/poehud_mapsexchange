@@ -453,21 +453,8 @@ namespace MapsExchange
 
             if (ingameState.IngameUi.InventoryPanel.IsVisible)
             {
-                List<NormalInventoryItem> playerInvItems = new List<NormalInventoryItem>();
-                var inventoryZone = ingameState.IngameUi.InventoryPanel[PoeHUD.Models.Enums.InventoryIndex.PlayerInventory].InventoryUiElement;
-
-                foreach (Element element in inventoryZone.Children)
-                {
-                    var inventElement = element.AsObject<NormalInventoryItem>();
-
-                    if (inventElement.InventPosX < 0 || inventElement.InventPosY < 0)
-                    {
-                        continue;
-                    }
-                    playerInvItems.Add(inventElement);
-                }
-
-                HiglightAllMaps(playerInvItems);
+                var inventoryZone = ingameState.IngameUi.InventoryPanel[PoeHUD.Models.Enums.InventoryIndex.PlayerInventory].VisibleInventoryItems;
+                HiglightAllMaps(inventoryZone);
             }
         }
 
@@ -487,7 +474,7 @@ namespace MapsExchange
 
             foreach (var inv in npcInv)
             {
-                foreach(var item in inv.Inventory.Items)
+                foreach (var item in inv.Inventory.Items)
                 {
                     var mapComponent = item.GetComponent<PoeHUD.Poe.Components.Map>();
                     var mapArea = mapComponent.Area;
@@ -501,25 +488,26 @@ namespace MapsExchange
                     drawListPos.Y += 20;
                 }
             }
+            /*
+          if (ingameState.IngameUi.InventoryPanel.IsVisible)
+          {
+              List<NormalInventoryItem> playerInvItems = new List<NormalInventoryItem>();
+              var inventoryZone = ingameState.IngameUi.InventoryPanel[PoeHUD.Models.Enums.InventoryIndex.PlayerInventory].VisibleInventoryItems;//.InventoryUiElement;
 
-            if (ingameState.IngameUi.InventoryPanel.IsVisible)
-            {
-                List<NormalInventoryItem> playerInvItems = new List<NormalInventoryItem>();
-                var inventoryZone = ingameState.IngameUi.InventoryPanel[PoeHUD.Models.Enums.InventoryIndex.PlayerInventory].InventoryUiElement;
+              foreach (Element element in inventoryZone.Children)
+              {
+                  var inventElement = element.AsObject<NormalInventoryItem>();
 
-                foreach (Element element in inventoryZone.Children)
-                {
-                    var inventElement = element.AsObject<NormalInventoryItem>();
-
-                    if (inventElement.InventPosX < 0 || inventElement.InventPosY < 0)
-                    {
-                        continue;
-                    }
-                    playerInvItems.Add(inventElement);
-                }
-
-                HiglightAllMaps(playerInvItems);
+                  if (inventElement.InventPosX < 0 || inventElement.InventPosY < 0)
+                  {
+                      continue;
+                  }
+                  playerInvItems.Add(inventElement);
+              }
+            
+            HiglightAllMaps(playerInvItems);
             }
+              */
         }
 
 
@@ -636,7 +624,7 @@ namespace MapsExchange
                     disableOnHoverRect = tooltip.GetClientRect();
                 }
             }
-
+          
 
             foreach (var item in items)
             {
@@ -645,10 +633,11 @@ namespace MapsExchange
                 if (entity == null) continue;
 
                 BaseItemType bit = GameController.Files.BaseItemTypes.Translate(entity.Path);
+
                 if (bit == null) continue;
                 if (bit.ClassName != "Map") continue;
                 var mapComponent = entity.GetComponent<PoeHUD.Poe.Components.Map>();
-
+            
                 var drawRect = item.GetClientRect();
 
                 if (disableOnHover && disableOnHoverRect.Intersects(drawRect))
@@ -661,14 +650,14 @@ namespace MapsExchange
                 drawRect.Left += offset;
 
                 int Completed = 0;
-
+            
                 if (comp.Contains(mapComponent.Area))
                     Completed++;
                 if (bonusComp.Contains(mapComponent.Area))
                     Completed++;
 
                 var ShaperElder = shEld.Contains(mapComponent.Area);
-
+           
 
                 if (Completed == 0)
                     Graphics.DrawPluginImage(System.IO.Path.Combine(PluginDirectory, "images/circle2.png"), drawRect, Color.Red);
