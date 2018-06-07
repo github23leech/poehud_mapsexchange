@@ -17,7 +17,7 @@ namespace MapsExchange
 
         public PoeTradeProcessor()
         {
-            DefaultPostData.Add("league=Bestiary");
+            DefaultPostData.Add("league=Incursion");
             DefaultPostData.Add("type=Map");
             DefaultPostData.Add("base=");
             DefaultPostData.Add("name=");
